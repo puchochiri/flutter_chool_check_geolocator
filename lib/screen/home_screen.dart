@@ -9,6 +9,19 @@ class HomeScreen extends StatelessWidget {
       37.5233273, // 위도
       126.921252 // 경도
   );
+// 회사 위치 마커 선언
+  static final Marker marker = Marker(
+    markerId: MarkerId('company'),
+    position: companyLatLng,
+  );
+  static final Circle circle = Circle(
+      circleId: CircleId('choolCheckCircle'),
+      center: companyLatLng, // 원의 중심이 되는 위치, LatLng값을 제공합니다.
+      fillColor: Colors.blue.withOpacity(0.5), //원의 색상
+      radius: 100, // 원의 반지름(미터 단위)
+      strokeColor: Colors.blue, // 원의 테두리 색
+      strokeWidth: 1, // 원의 테두리 두께
+  );
 
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -36,6 +49,9 @@ class HomeScreen extends StatelessWidget {
                         target: companyLatLng,
                         zoom: 16
                     ),
+                    myLocationEnabled: true, // 내 위치 지도에 보여주기
+                    markers: Set.from([marker]), //Set로 Maker 제공
+                    circles: Set.from([circle]), //Set로 Circle 제공
                   ),
                 ),
                 Expanded(
@@ -49,7 +65,47 @@ class HomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 20.0),
                         ElevatedButton( //[출근하기 버튼]
-                          onPressed: () {},
+                          onPressed: () async {
+                            final curPosition = await Geolocator.getCurrentPosition(); // 현재 위치
+                            final distance = Geolocator.distanceBetween(
+                                curPosition.latitude, // 현재 위치 위도 
+                                curPosition.longitude, // 현재 위치 경도 
+                                companyLatLng.latitude, //회사 위치 위도
+                                companyLatLng.longitude,  //회사 위치 경도
+                            );
+                            bool canCheck =
+                                distance < 100; //100미터 이내에 있으면 출근 가능
+                            showDialog(
+                                context: context,
+                                builder: (_) {
+                                  return AlertDialog(
+                                    title: Text('출근하기'),
+                                    //출근 가능 여부에 따라 다른 메시지 제공
+                                    content: Text(
+                                      canCheck ? '출근을 하시곘습니까?' : '출근할 수 없는 위치 입니다.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop(false);
+                                          },
+                                          child: Text('취소'),
+                                      ),
+                                      if(canCheck) // 출근 가능한 상태일 때만 [출근하기] 버튼 제공
+                                        TextButton(
+                                          // 출근하기를 누르면 true반환
+                                            onPressed: () {
+                                              Navigator.of(context).pop(true);
+                                            },
+                                            child: Text('출근하기'),
+                                        ),
+                                    ],
+
+                                  );
+                                },
+                            );
+                            
+                          },
                           child: Text('출근하기'),
                         ),
                       ],
